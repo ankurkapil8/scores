@@ -24,5 +24,6 @@ response:- {
     "success": true/false,
     "token": "",
     "imageUrl": "",
-    "uniqueId": ""
+    "uniqueId": "",
+    "name":""
 }
