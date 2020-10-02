@@ -25,73 +25,89 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // create user API 
 app.post("/create-user", (req, res, next) => {
-  let message = "";
-  if (req.body.imageUrl == "" || req.body.imageUrl == undefined) {
-    return res.json({
-      success: false,
-      message: 'imageUrl should not empty'
-    });
-  }
-  if (req.body.uniqueId == "" || req.body.uniqueId == undefined) {
-    return res.json({
-      success: false,
-      message: 'uniqueId should not empty'
-    });
-  }
-  let name = req.body.name;
-  let imageUrl = req.body.imageUrl;
-  let uniqueId = req.body.uniqueId;
-  db.run('INSERT INTO users(name, imageUrl,uniqueId) VALUES(?, ?, ?)', [name, imageUrl, uniqueId], function (err) {
-    if (err) {
+  try {
+    if (req.body.imageUrl == "" || req.body.imageUrl == undefined) {
       return res.json({
         success: false,
-        message: err.message
-      });
-    } else {
-      var payload = { 'name': name, 'imageUrl': imageUrl, 'uniqueId': uniqueId };
-      var token = jwt.sign(payload, app.get('superSecret'), { expiresIn: '2h' });
-      return res.json({
-        success: true,
-        token: token,
-        ...payload
+        message: 'imageUrl should not empty'
       });
     }
-  })
+    if (req.body.uniqueId == "" || req.body.uniqueId == undefined) {
+      return res.json({
+        success: false,
+        message: 'uniqueId should not empty'
+      });
+    }
+    let name = req.body.name;
+    let imageUrl = req.body.imageUrl;
+    let uniqueId = req.body.uniqueId;
+    db.run('INSERT INTO users(name, imageUrl,uniqueId) VALUES(?, ?, ?)', [name, imageUrl, uniqueId], function (err) {
+      if (err) {
+        return res.json({
+          success: false,
+          message: err.message
+        });
+      } else {
+        var payload = { 'name': name, 'imageUrl': imageUrl, 'uniqueId': uniqueId };
+        var token = jwt.sign(payload, app.get('superSecret'), { expiresIn: '2h' });
+        return res.json({
+          success: true,
+          token: token,
+          ...payload
+        });
+      }
+    })
+
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: error.message
+    });
+
+  }
 
 });
 
 // find user API
 app.get("/get-user", (req, res, next) => {
-  console.log(req.query);
-  if (req.query.uniqueId == "" || req.query.uniqueId == undefined) {
-    return res.json({
-      success: false,
-      message: 'uniqueId should not empty'
-    });
-  }
-  let sql = `SELECT *
-           FROM users
-           WHERE uniqueId  = ?`;
-  db.get(sql, [req.query.uniqueId], function (err, row) {
-    console.log(row);
-    console.log(err);
-    if (err) {
+  try {
+    if (req.query.uniqueId == "" || req.query.uniqueId == undefined) {
       return res.json({
         success: false,
-        message: err.message
+        message: 'uniqueId should not empty'
       });
     }
-    if (!row) {
-      return res.json({
-        success: true,
-        message: "user not available"
-      });
-    } else {
-      return res.json({
-        success: true,
-        ...row
-      });
-    }
-  })
+    let sql = `SELECT *
+             FROM users
+             WHERE uniqueId  = ?`;
+    db.get(sql, [req.query.uniqueId], function (err, row) {
+      console.log(row);
+      console.log(err);
+      if (err) {
+        return res.json({
+          success: false,
+          message: err.message
+        });
+      }
+      if (!row) {
+        return res.json({
+          success: true,
+          message: "user not available"
+        });
+      } else {
+        return res.json({
+          success: true,
+          ...row
+        });
+      }
+    })
+
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: error.message
+    });
+
+  }
 });
 
