@@ -27,3 +27,17 @@ response:- {
     "uniqueId": "",
     "name":""
 }
+
+## find user
+url:- /get-user?uniqueId=xyz
+
+type:- get
+
+response:- {
+    "success": true/false,
+    "imageUrl": "",
+    "uniqueId": "",
+    "name":""
+}
+
+
