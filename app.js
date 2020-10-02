@@ -81,8 +81,6 @@ app.get("/get-user", (req, res, next) => {
              FROM users
              WHERE uniqueId  = ?`;
     db.get(sql, [req.query.uniqueId], function (err, row) {
-      console.log(row);
-      console.log(err);
       if (err) {
         return res.json({
           success: false,
@@ -95,8 +93,11 @@ app.get("/get-user", (req, res, next) => {
           message: "user not available"
         });
       } else {
+        //var payload = { 'name': name, 'imageUrl': imageUrl, 'uniqueId': uniqueId };
+        var token = jwt.sign(row, app.get('superSecret'), { expiresIn: '2h' });
         return res.json({
           success: true,
+          token,
           ...row
         });
       }
