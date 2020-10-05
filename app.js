@@ -50,7 +50,7 @@ app.post("/create-user", (req, res, next) => {
         });
       } else {
         var payload = { 'name': name, 'imageUrl': imageUrl, 'uniqueId': uniqueId };
-        let token = name+"-"+uniqueId+"-"+this.lastID;
+        let token = name + "-" + uniqueId + "-" + this.lastID;
         //var token = jwt.sign(payload, app.get('superSecret'), { expiresIn: '2h' });
         return res.json({
           success: true,
@@ -97,7 +97,7 @@ app.get("/get-user", (req, res, next) => {
       } else {
         //var payload = { 'name': name, 'imageUrl': imageUrl, 'uniqueId': uniqueId };
         //var token = jwt.sign(row, app.get('superSecret'), { expiresIn: '2h' });
-        let token = row.name+"-"+row.uniqueId+"-"+row.rowid;
+        let token = row.name + "-" + row.uniqueId + "-" + row.rowid;
         return res.json({
           success: true,
           token,
@@ -115,7 +115,7 @@ app.get("/get-user", (req, res, next) => {
   }
 });
 // submit new score
-app.post('/submit-score',(req,res,next)=>{
+app.post('/submit-score', (req, res, next) => {
   try {
     //console.log(req.body);
     if (req.body.leaderboardName == "" || req.body.leaderboardName == undefined) {
@@ -139,56 +139,56 @@ app.post('/submit-score',(req,res,next)=>{
     let sql = `SELECT *
              FROM scores
              WHERE leaderboardName  = ?`;
-    db.all(sql,[req.body.leaderboardName],function(err,row){
-      if(err){
+    db.all(sql, [req.body.leaderboardName], function (err, row) {
+      if (err) {
         return res.json({
           success: false,
           message: err.message
         });
-      }else{
+      } else {
         let userUniqueId = req.body.token.split("-");
         let newRow = {
-          leaderboardName:req.body.leaderboardName,
-          score:req.body.score,
-          place:0,
-          userUniqueId:userUniqueId[1],
-          createdAt:Date.now(),
-          percentage:0
+          leaderboardName: req.body.leaderboardName,
+          score: req.body.score,
+          place: 0,
+          userUniqueId: userUniqueId[1],
+          createdAt: Date.now(),
+          percentage: 0
         }
-        row.forEach((data,index)=>{ //remove existing user data if exist
-          if(data.userUniqueId == newRow.userUniqueId){
-            row.splice(index,1);
+        row.forEach((data, index) => { //remove existing user data if exist
+          if (data.userUniqueId == newRow.userUniqueId) {
+            row.splice(index, 1);
           }
         })
         row.push(newRow); //push coming body in data row
         let userCount = row.length;
         row.sort(customSortController.customSort); //sort row by score
-        row.forEach((data,index)=>{  //update place and percentage
-          if(index>0 && row[index].score == row[index-1].score){ // if two or more user have same score, then place should be same
-            row[index].place = row[index-1].place;
-            row[index].percentage = parseInt(row[index].place)/userCount;
-          }else{
-            row[index].place = index+1;
-            row[index].percentage = parseInt(row[index].place)/userCount;
+        row.forEach((data, index) => {  //update place and percentage
+          if (index > 0 && row[index].score == row[index - 1].score) { // if two or more user have same score, then place should be same
+            row[index].place = row[index - 1].place;
+            row[index].percentage = parseInt(row[index].place) / userCount;
+          } else {
+            row[index].place = index + 1;
+            row[index].percentage = parseInt(row[index].place) / userCount;
           }
-          if(data.userUniqueId == newRow.userUniqueId){ // update newRow place and percentage for return data
+          if (data.userUniqueId == newRow.userUniqueId) { // update newRow place and percentage for return data
             newRow.place = row[index].place;
             newRow.percentage = row[index].percentage;
           }
         });
 
         let deleteSql = "delete from scores where leaderboardName =?";
-        db.run(deleteSql,req.body.leaderboardName,function(err,data){
-          if(err){
+        db.run(deleteSql, req.body.leaderboardName, function (err, data) {
+          if (err) {
             return res.json({
               success: false,
               message: err.message
             });
-          }else{ //insert updated data in scores table
+          } else { //insert updated data in scores table
             let insertQuery = 'INSERT INTO scores(leaderboardName, score, place, userUniqueId, createdAt, percentage) VALUES(?, ?, ?, ?, ?, ?)';
             let statement = db.prepare(insertQuery);
-            row.forEach(rowData=>{
-              statement.run([rowData.leaderboardName, rowData.score, rowData.place, rowData.userUniqueId, rowData.createdAt, rowData.percentage],function(err){
+            row.forEach(rowData => {
+              statement.run([rowData.leaderboardName, rowData.score, rowData.place, rowData.userUniqueId, rowData.createdAt, rowData.percentage], function (err) {
                 if (err) {
                   return res.json({
                     success: false,
@@ -201,13 +201,13 @@ app.post('/submit-score',(req,res,next)=>{
             return res.json({
               success: true,
               place: newRow.place,
-              percentage:newRow.percentage
+              percentage: newRow.percentage
             });
 
           }
         })
       }
-    })         
+    })
 
   } catch (error) {
     return res.json({
@@ -220,22 +220,20 @@ app.post('/submit-score',(req,res,next)=>{
 // get top score of perticular leader board
 app.get('/top-score', (req, res, next) => {
   try {
-    if(req.query.leaderboardName == "" || req.query.leaderboardName == undefined){
+    if (req.query.leaderboardName == "" || req.query.leaderboardName == undefined) {
       return res.json({
         success: false,
         message: 'leaderboardName should not empty'
       });
     }
-    let sql ="select s.place as rank, s.score, u.name, u.imageUrl, s.createdAt from scores as s INNER JOIN users as u on (s.userUniqueId == u.uniqueId) where s.leaderboardName=?";
-    db.all(sql,[req.query.leaderboardName],function(err, data){
-      console.log(data);
-      console.log(err);
-      if(err){
+    let sql = "select s.place as rank, s.score, u.name, u.imageUrl, s.createdAt from scores as s INNER JOIN users as u on (s.userUniqueId == u.uniqueId) where s.leaderboardName=?";
+    db.all(sql, [req.query.leaderboardName], function (err, data) {
+      if (err) {
         return res.json({
           success: false,
           message: error.message
         });
-      }else{
+      } else {
         return res.json(data);
       }
     })
@@ -246,3 +244,81 @@ app.get('/top-score', (req, res, next) => {
     });
   }
 });
+
+app.get('/user-score', (req, res, next) => {
+  if (req.query.leaderboardName == "" || req.query.leaderboardName == undefined) {
+    return res.json({
+      success: false,
+      message: 'leaderboardName should not empty'
+    });
+  }
+  if (req.query.token == "" || req.query.token == undefined) {
+    return res.json({
+      success: false,
+      message: 'token should not empty'
+    });
+  }
+  if (req.query.limit == "" || req.query.limit == undefined) {
+    return res.json({
+      success: false,
+      message: 'limit should not empty'
+    });
+  }
+  let uniqueId = req.query.token.split("-");
+  let returnData = [];
+  let userIndex = -1;
+  let limit = req.query.limit;
+  let arrLength = 0;
+  let sql = "select s.place as rank, s.score, u.name, u.imageUrl, u.uniqueId, s.createdAt from scores as s INNER JOIN users as u on (s.userUniqueId == u.uniqueId) where s.leaderboardName=?";
+  db.all(sql, [req.query.leaderboardName], function (err, row) {
+    //console.log(row);
+    if (err) {
+      return res.json({
+        success: false,
+        message: err.message
+      });
+    } else {
+      arrLength = row.length;
+      row.forEach((data, index) => {
+        if (data.uniqueId == uniqueId[1]) {
+          userIndex = index;
+        }
+      });
+      if (userIndex < 0) {
+        return res.json({
+          success: false,
+          message: "user not available in leader board"
+        });
+      }
+
+      //console.log(userIndex);
+      let quotient = Math.floor(limit / 2);
+      let startindex = userIndex - quotient;
+      if (startindex < 0) { // not enaugh element from start
+        startindex = 0;
+      }
+      let remainingElement = arrLength - startindex;
+      if (remainingElement < limit) { // no enaugh element at end
+        let moveIndex = limit - remainingElement;
+        startindex = startindex - moveIndex;
+
+      }
+      let end = parseInt(startindex)+parseInt(limit);
+      console.log("start "+startindex);
+      console.log("end "+end);
+      for(var i=startindex;i<end;i++){
+        returnData.push(row[i]);
+      }
+
+      return res.json(returnData);
+
+    }
+
+  })
+  // return res.json({
+  //   success: true,
+  //   message: 'T'
+  // });
+
+
+})
