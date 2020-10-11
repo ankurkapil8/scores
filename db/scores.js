@@ -73,7 +73,7 @@ module.exports = {
     },
     async getTopScore(leaderboardName) {
         return new Promise((resolve, reject) => {
-            let sql = "select u.name,u.imageUrl,p1.*,(select  count(*) from scores as p2 where p2.score > p1.score) as rank from scores as p1 INNER JOIN users as u on (p1.userUniqueId == u.uniqueId) where p1.leaderboardName=?;"
+            let sql = "SELECT s.score,s.createdAt,u.name,u.imageUrl, DENSE_RANK () OVER ( PARTITION BY s.leaderboardName ORDER BY s.score DESC ) rank FROM scores as s INNER JOIN users as u on (s.userUniqueId == u.uniqueId) WHERE s.leaderboardName = ?";
             db.all(sql, [leaderboardName], function (err, data) {
                 if (err) {
                     reject(err.message)
@@ -85,44 +85,24 @@ module.exports = {
     },
     async getUserScore(leaderboardName, uniqueId, limit) {
         return new Promise((resolve, reject) => {
-            let userIndex = -1;
-            let arrLength = 0;
-            let sql = "select u.name,u.imageUrl,u.uniqueId,p1.*,(select  count(*) from scores as p2 where p2.score > p1.score) as rank from scores as p1 INNER JOIN users as u on (p1.userUniqueId == u.uniqueId) where p1.leaderboardName=?;"
-            db.all(sql, [leaderboardName], function (err, row) {
-                let returnData = [];
+            let sql = `WITH
+            -- Keep temporary table of ranks
+            ranks AS (SELECT *, DENSE_RANK () OVER ( PARTITION BY leaderboardName ORDER BY score DESC ) rank FROM scores WHERE leaderboardName = ?)
+            -- Select ranks around 
+          SELECT u.name,u.imageUrl,u.uniqueId,ranks.score,ranks.rank,ranks.createdAt,
+            (SELECT rank FROM ranks WHERE userUniqueId = ?) AS ogRank
+          FROM ranks
+          INNER JOIN users as u on (ranks.userUniqueId == u.uniqueId)
+          WHERE ranks.rank >= ogRank - 2
+           AND ranks.rank <= ogRank +2
+          ORDER BY rank LIMIT ?;`;
+            db.all(sql, [leaderboardName,uniqueId,limit], function (err, row) {
                 if (err) {
                     reject(err.message);
                 } else {
-                    arrLength = row.length;
-                    row.forEach((data, index) => {
-                        if (data.uniqueId == uniqueId) {
-                            userIndex = index;
-                        }
-                    });
-                    if (userIndex < 0) {
-                        reject("user not available in leader board");
-                    }
-                    let quotient = Math.floor(limit / 2);
-                    let startindex = userIndex - quotient;
-                    if (startindex < 0) { // not enaugh element from start
-                        startindex = 0;
-                    }
-                    let remainingElement = arrLength - startindex;
-                    if (remainingElement < limit) { // no enaugh element at end
-                        let moveIndex = limit - remainingElement;
-                        startindex = startindex - moveIndex;
-
-                    }
-                    let end = parseInt(startindex) + parseInt(limit);
-                    for (var i = startindex; i < end; i++) {
-                        returnData.push(row[i]);
-                    }
-                    resolve(returnData);
+                    resolve(row);
                 }
-
             })
-
         })
     }
-
 }
